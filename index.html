@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Votre Audit de Performance Digitale</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Poppins", sans-serif;
+                background-color: #0a463c;
+                color: #e0f2f1;
+            }
+            .title-underline {
+                text-decoration: underline;
+                text-decoration-color: #00ffaa;
+                text-decoration-thickness: 2px;
+                text-underline-offset: 6px;
+            }
+            .form-input {
+                background-color: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(0, 255, 170, 0.2);
+                color: #e0f2f1;
+            }
+            .form-input::placeholder {
+                color: rgba(255, 255, 255, 0.5);
+            }
+            .btn {
+                padding: 0.75rem 1.5rem;
+                border-radius: 0.5rem;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            .btn-primary {
+                background-color: #00ffaa;
+                color: #0a463c;
+            }
+            .btn-primary:hover {
+                background-color: #ffffff;
+                color: #0a463c;
+            }
+            .btn-secondary {
+                background-color: transparent;
+                color: #00ffaa;
+                border: 1px solid #00ffaa;
+            }
+            .btn-secondary:hover {
+                background-color: #00ffaa;
+                color: #0a463c;
+            }
+            .loader {
+                border: 4px solid rgba(255, 255, 255, 0.2);
+                border-left-color: #00ffaa;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .modal-backdrop {
+                background-color: rgba(0, 0, 0, 0.7);
+            }
+            .sparkle {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                background-color: #00ffaa;
+                border-radius: 50%;
+                opacity: 0;
+                animation: sparkle-anim 1.5s infinite;
+            }
+            @keyframes sparkle-anim {
+                0%,
+                100% {
+                    transform: scale(0);
+                    opacity: 0;
+                }
+                50% {
+                    transform: scale(1.2);
+                    opacity: 1;
+                }
+            }
+
+            /* --- Styles for the report content (light theme) --- */
+            #report-container {
+                background-color: #ffffff;
+                color: #333333;
+            }
+            #report-header {
+                padding-bottom: 1.5rem;
+                border-bottom: 2px solid #0a463c;
+                margin-bottom: 1.5rem;
+            }
+            #report-header h1 {
+                color: #0a463c;
+                font-size: 2.5rem;
+                font-weight: 700;
+            }
+            #report-header p {
+                color: #555;
+                font-size: 0.9rem;
+            }
+            #report-content h3 {
+                color: #0a463c;
+                font-size: 1.75rem;
+                font-weight: 700;
+                margin-top: 2rem;
+                margin-bottom: 0.5rem;
+                padding-bottom: 0.25rem;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            #report-content p,
+            #report-content li {
+                color: #555555;
+            }
+            .audit-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 1.5rem;
+                font-size: 0.9rem;
+            }
+            .audit-table th,
+            .audit-table td {
+                border: 1px solid #e0e0e0;
+                padding: 0.75rem 1rem;
+                text-align: left;
+                vertical-align: top;
+            }
+            .audit-table th {
+                background-color: #f7f7f7;
+                color: #0a463c;
+                font-weight: 600;
+            }
+            .audit-table td {
+                color: #333333;
+            }
+            .audit-table td:nth-child(1) {
+                /* Critère */
+                font-weight: 600;
+                color: #0a463c;
+                width: 30%;
+            }
+            .audit-table td:nth-child(2) {
+                /* Résultat */
+                width: 30%;
+            }
+            .audit-table td:nth-child(3) {
+                /* Recommandation */
+                width: 40%;
+            }
+            .audit-table strong {
+                color: #008f7a; /* Darker green for readability on white */
+            }
+            #report-footer {
+                margin-top: 2rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e0e0e0;
+                text-align: center;
+                font-size: 0.8rem;
+                color: #888;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen flex items-center justify-center p-4">
+        <div id="sparkle-container" class="fixed inset-0 -z-10"></div>
+
+        <div id="initial-view" class="w-full max-w-4xl mx-auto text-center">
+            <!-- Step 1: URL Input -->
+            <div id="step-url">
+                <div class="mb-4">
+                    <span
+                        class="text-sm font-semibold text-[#00FFAA] tracking-widest"
+                        >PROPULSÉ PAR L'IA</span
+                    >
+                </div>
+                <h1 class="text-4xl md:text-6xl font-bold text-white mb-12">
+                    Votre <span class="title-underline">audit</span> de
+                    performance <span class="title-underline">digitale</span>
+                </h1>
+
+                <div class="max-w-2xl mx-auto">
+                    <p class="text-lg text-gray-300 mb-8">
+                        Plus de 50 critères analysés et des tips pour vous
+                        améliorer en seulement 1 minute.
+                        <span class="font-bold text-white">Gratuitement</span>.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <input
+                            type="url"
+                            id="url-input"
+                            placeholder="https://www.votresite.com"
+                            class="form-input w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFAA]"
+                        />
+                        <button
+                            id="start-audit-btn"
+                            class="btn btn-primary flex-shrink-0"
+                        >
+                            Lancer l'audit
+                        </button>
+                    </div>
+                    <p
+                        id="url-error"
+                        class="text-red-400 mt-2 text-left h-5"
+                    ></p>
+                </div>
+            </div>
+
+            <!-- Step 2: Loading -->
+            <div id="step-loading" class="hidden">
+                <div class="loader mx-auto mb-6"></div>
+                <h2 class="text-2xl font-semibold text-white mb-2">
+                    Analyse en cours...
+                </h2>
+                <p class="text-gray-300">
+                    Notre IA analyse votre site. Veuillez patienter quelques
+                    instants.
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 4: Report Display -->
+        <div id="step-report" class="hidden text-left w-full max-w-5xl mx-auto">
+            <div
+                class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+            >
+                <h2 class="text-3xl font-bold text-white">
+                    Votre Rapport d'Audit
+                </h2>
+                <div class="flex gap-4">
+                    <button id="download-pdf-btn" class="btn btn-secondary">
+                        Télécharger en PDF
+                    </button>
+                    <button id="new-audit-btn" class="btn btn-primary">
+                        Nouveau Audit
+                    </button>
+                </div>
+            </div>
+            <div
+                id="report-container"
+                class="p-6 sm:p-10 rounded-lg shadow-2xl"
+            >
+                <div id="report-header">
+                    <h1 id="report-title">
+                        Rapport d'Audit de Performance Digitale
+                    </h1>
+                    <p>
+                        <strong>URL Analysée :</strong>
+                        <span id="report-url"></span>
+                    </p>
+                    <p>
+                        <strong>Date de l'audit :</strong>
+                        <span id="report-date"></span>
+                    </p>
+                </div>
+                <div id="report-content" class="max-w-none">
+                    <!-- The audit content generated by the AI will be injected here -->
+                </div>
+                <div id="report-footer">
+                    <p>
+                        Rapport propulsé par <strong>Greencub</strong>, votre
+                        agence de communication
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Form Modal -->
+        <div
+            id="form-modal"
+            class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop"
+        >
+            <div
+                class="bg-[#0A463C] border border-gray-700 p-8 rounded-lg w-full max-w-md text-left relative"
+            >
+                <h2 class="text-2xl font-bold text-white mb-2">
+                    Presque terminé !
+                </h2>
+                <p class="text-gray-300 mb-6">
+                    Pour accéder à votre audit complet et gratuit, veuillez
+                    remplir ce formulaire.
+                </p>
+                <form id="lead-form">
+                    <div class="mb-4">
+                        <label
+                            for="name"
+                            class="block text-sm font-medium text-gray-300 mb-1"
+                            >Nom complet</label
+                        >
+                        <input
+                            type="text"
+                            id="name"
+                            required
+                            class="form-input w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFAA]"
+                        />
+                    </div>
+                    <div class="mb-4">
+                        <label
+                            for="email"
+                            class="block text-sm font-medium text-gray-300 mb-1"
+                            >Email</label
+                        >
+                        <input
+                            type="email"
+                            id="email"
+                            required
+                            class="form-input w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFAA]"
+                        />
+                    </div>
+                    <div class="mb-6">
+                        <label
+                            for="phone"
+                            class="block text-sm font-medium text-gray-300 mb-1"
+                            >Téléphone</label
+                        >
+                        <input
+                            type="tel"
+                            id="phone"
+                            required
+                            class="form-input w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFAA]"
+                        />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        Accéder à mon audit
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            // --- Library Initialization ---
+            const { jsPDF } = window.jspdf;
+
+            // --- DOM Elements ---
+            const startAuditBtn = document.getElementById("start-audit-btn");
+            const urlInput = document.getElementById("url-input");
+            const urlError = document.getElementById("url-error");
+
+            const initialView = document.getElementById("initial-view");
+            const stepUrl = document.getElementById("step-url");
+            const stepLoading = document.getElementById("step-loading");
+
+            const stepReport = document.getElementById("step-report");
+            const reportUrl = document.getElementById("report-url");
+            const reportDate = document.getElementById("report-date");
+            const reportContent = document.getElementById("report-content");
+            const downloadPdfBtn = document.getElementById("download-pdf-btn");
+            const newAuditBtn = document.getElementById("new-audit-btn");
+
+            const formModal = document.getElementById("form-modal");
+            const leadForm = document.getElementById("lead-form");
+
+            let generatedAuditReport = "";
+
+            // --- Sparkle Effect ---
+            const sparkleContainer =
+                document.getElementById("sparkle-container");
+            function createSparkles() {
+                for (let i = 0; i < 20; i++) {
+                    const sparkle = document.createElement("div");
+                    sparkle.className = "sparkle";
+                    sparkle.style.top = `${Math.random() * 100}%`;
+                    sparkle.style.left = `${Math.random() * 100}%`;
+                    sparkle.style.animationDelay = `${Math.random() * 1.5}s`;
+                    sparkle.style.animationDuration = `${1 + Math.random()}s`;
+                    sparkleContainer.appendChild(sparkle);
+                }
+            }
+            createSparkles();
+
+            // --- Application Logic ---
+            function isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            startAuditBtn.addEventListener("click", () => {
+                const url = urlInput.value.trim();
+                if (isValidUrl(url)) {
+                    urlError.textContent = "";
+                    stepUrl.classList.add("hidden");
+                    stepLoading.classList.remove("hidden");
+                    generateAudit(url);
+                } else {
+                    urlError.textContent = "Veuillez entrer une URL valide.";
+                }
+            });
+
+            async function generateAudit(url) {
+                const prompt = `En tant qu'expert en marketing digital, réalise un audit de performance digitale COMPLET et EXHAUSTIF pour le site web : ${url}.
+Le rapport doit être en français et suivre STRICTEMENT la structure et le format du modèle fourni. Tu dois OBLIGATOIREMENT analyser CHAQUE critère numéroté listé ci-dessous, sans aucune exception, et générer une ligne de tableau pour chacun.
+
+**Modèle de Rapport :**
+Le rapport doit être généré en HTML.
+1.  **Synthèse Stratégique :** Commence par un titre H3 "Synthèse Stratégique". Rédige un court paragraphe qui résume les 3 points d'action les plus importants et urgents pour le client, en citant les numéros des critères correspondants (ex: 1.3, 2.5, ...).
+2.  **Analyse Détaillée :** Continue avec les 6 catégories d'analyse. Pour chaque catégorie, crée un titre H3, suivi d'un court paragraphe d'introduction, puis d'un tableau HTML (<table class="audit-table">). Le tableau doit avoir 3 colonnes : "Critère", "Résultat", et "Recommandation".
+3.  **Prochaines Étapes :** Termine par un titre H3 "Prochaines Étapes". Rédige un paragraphe expliquant comment Greencub peut aider à mettre en œuvre ces recommandations (ex: atelier stratégique, optimisation technique, gestion des réseaux sociaux).
+
+Utilise les emojis suivants dans la colonne "Résultat" pour indiquer le statut :
+- ✅ pour Excellent/Bon
+- 🟠 pour Moyen/Perfectible
+- 🔴 pour Faible/Critique
+
+**Critères à Analyser (TOUS les critères numérotés doivent être analysés sans exception) :**
+
+1.  **Site Web & Expérience Utilisateur (UX/UI)**
+    -   Introduction générale.
+    -   Tableau avec les critères : 1.1 Design Adaptatif (Responsive), 1.2 Accessibilité (Indications), 1.3 Vitesse de Chargement (Mobile), 1.4 Vitesse de Chargement (Desktop), 1.5 Certificat SSL, 1.6 Optimisation des Images, 1.7 Clarté de la Navigation, 1.8 Fil d'Ariane, 1.9 Structure des URLs, 1.10 Plan du Site (Sitemap.xml), 1.11 Fichier Robots.txt, 1.12 Qualité perçue du Contenu, 1.13 Appels à l'Action (CTA), 1.14 Coordonnées de Contact, 1.15 Blog / Section Actualités.
+
+2.  **Référencement Naturel (SEO) - Analyse Externe**
+    -   Introduction générale.
+    -   Tableau avec les critères : 2.1 Balises Titre & Méta-descriptions, 2.2 Hiérarchie des Titres (H1, H2, H3), 2.3 Maillage Interne, 2.4 Données Structurées (Schema.org), 2.5 Estimation des Backlinks, 2.6 Analyse de la Concurrence (Visible).
+
+3.  **E-Réputation & Notoriété Locale (Publique)**
+    -   Introduction générale.
+    -   Tableau avec les critères : 3.1 Existence et Complétude de la Fiche Google, 3.2 Note Moyenne et Nombre d'Avis, 3.3 Fraîcheur des Avis, 3.4 Réponse visible aux Avis, 3.5 Utilisation des Posts Google, 3.6 Présence sur les Plateformes d'Avis, 3.7 Présence dans les Annuaires Locaux.
+
+4.  **Réseaux Sociaux (Analyse Publique)**
+    -   Introduction générale.
+    -   Tableau avec les critères : 4.1 Liens vers les Réseaux, 4.2 Complétude des Profils (Visible), 4.3 Cohérence de l'Image de Marque, 4.4 Fréquence de Publication, 4.5 Qualité et Pertinence du Contenu, 4.6 Engagement Visible.
+
+5.  **Tunnel de Conversion (Analyse du Parcours)**
+    -   Introduction générale.
+    -   Tableau avec les critères : 5.1 Identification du Tunnel Principal, 5.2 Clarté des Étapes, 5.3 Facilité d'Utilisation, 5.4 Textes Incitatifs (Microcopy), 5.5 Éléments de Réassurance Visibles, 5.6 Distractions Limitées.
+
+6.  **Détection des Outils de Suivi**
+    -   Introduction générale.
+    -   Tableau avec les critères : 6.1 Détection de Google Analytics, 6.2 Détection d'un Gestionnaire de Balises, 6.3 Détection de Pixels Publicitaires.
+
+**Instructions de Formatage HTML :**
+- Utilise des balises <h3> pour les titres de section.
+- Utilise des balises <p> et <ul>/<li> pour les paragraphes et listes.
+- Utilise <table class="audit-table"><thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead><tbody>...</tbody></table>.
+- Utilise des balises <strong> pour mettre en évidence les points importants.
+
+Génère un rapport complet et professionnel basé sur une analyse externe simulée du site ${url}.`;
+
+                try {
+                    // Simulating API call delay
+                    await new Promise((resolve) => setTimeout(resolve, 8000)); // Increased delay for more complex report
+
+                    // Sample response for demo purposes
+                    generatedAuditReport = `
+                    <h3>Synthèse Stratégique</h3>
+                    <p>Cet audit révèle trois axes prioritaires pour booster votre performance digitale. L'action la plus urgente concerne l'<strong>optimisation de la vitesse sur mobile (1.3)</strong>, un facteur critique pour l'expérience utilisateur et le SEO. Ensuite, il est essentiel de <strong>renforcer votre profil de backlinks (2.5)</strong> pour améliorer votre autorité de domaine. Enfin, une <strong>stratégie pro-active de collecte d'avis clients (3.6)</strong> permettra de construire une preuve sociale solide et d'augmenter la confiance.</p>
+
+                    <h3>1. Site Web & Expérience Utilisateur (UX/UI)</h3>
+                    <p>Le site offre une première impression professionnelle, mais des optimisations techniques sont nécessaires pour que l'expérience utilisateur soit à la hauteur du design.</p>
+                    <table class="audit-table">
+                        <thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead>
+                        <tbody>
+                            <tr><td>1.1 Design Adaptatif</td><td>✅ Le site s'adapte bien aux différentes tailles d'écran.</td><td>RAS. La base est solide et garantit une bonne expérience sur tous les appareils.</td></tr>
+                            <tr><td>1.2 Accessibilité</td><td>🟠 Certaines images servant de lien n'ont pas de texte alternatif (attribut alt).</td><td><strong>Action essentielle :</strong> Renseigner systématiquement les balises alt pour améliorer le SEO et l'accessibilité.</td></tr>
+                            <tr><td>1.3 Vitesse (Mobile)</td><td>🔴 Le site est lent sur mobile, ce qui peut frustrer les utilisateurs et nuire au classement Google.</td><td><strong>Action critique :</strong> Mettre en place une stratégie agressive d'optimisation des images (compression, format WebP).</td></tr>
+                            <tr><td>1.4 Vitesse (Desktop)</td><td>🟠 Score passable, mais perfectible pour une expérience premium.</td><td>Les optimisations mobiles auront un impact direct.</td></tr>
+                            <tr><td>1.5 Certificat SSL</td><td>✅ Le site est sécurisé en HTTPS.</td><td>Indispensable et bien mis en place.</td></tr>
+                            <tr><td>1.6 Optimisation des Images</td><td>🔴 Point faible majeur. Les images sont trop lourdes.</td><td>Compresser les images existantes et automatiser le processus pour les nouvelles.</td></tr>
+                            <tr><td>1.7 Clarté de la Navigation</td><td>✅ Le menu principal est clair et logique.</td><td>La structure est intuitive pour les nouveaux visiteurs.</td></tr>
+                            <tr><td>1.8 Fil d'Ariane</td><td>🟠 Absent des pages profondes.</td><td>Implémenter un fil d'ariane pour améliorer la navigation et le SEO.</td></tr>
+                            <tr><td>1.9 Structure des URLs</td><td>✅ Les URLs sont courtes et descriptives.</td><td>Bonne pratique pour le SEO et l'expérience utilisateur.</td></tr>
+                            <tr><td>1.10 Plan du Site (Sitemap.xml)</td><td>✅ Fichier trouvé et accessible.</td><td>S'assurer qu'il est soumis à la Google Search Console.</td></tr>
+                            <tr><td>1.11 Fichier Robots.txt</td><td>✅ Fichier trouvé et accessible.</td><td>RAS.</td></tr>
+                            <tr><td>1.12 Qualité du Contenu</td><td>✅ Le contenu est pertinent et bien structuré.</td><td>Continuer à produire du contenu de qualité pour asseoir l'expertise.</td></tr>
+                            <tr><td>1.13 Appels à l'Action (CTA)</td><td>🟠 Les CTA sont présents mais pourraient être plus visibles et incitatifs.</td><td>Utiliser des couleurs contrastantes et des verbes d'action plus forts.</td></tr>
+                            <tr><td>1.14 Coordonnées de Contact</td><td>✅ Facilement accessibles dans le pied de page.</td><td>RAS.</td></tr>
+                            <tr><td>1.15 Blog / Section Actualités</td><td>🟠 La section existe mais les publications sont peu fréquentes.</td><td>Mettre en place un calendrier éditorial pour publier régulièrement.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>2. Référencement Naturel (SEO)</h3>
+                    <p>Le site a des bases SEO saines, mais manque d'optimisations sémantiques et d'autorité externe pour atteindre les premières positions.</p>
+                    <table class="audit-table">
+                         <thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead>
+                        <tbody>
+                            <tr><td>2.1 Balises Titre</td><td>🟠 Les titres des pages sont souvent génériques et manquent d'impact.</td><td>Optimiser les titres pour être plus incitatifs et inclure des mots-clés pertinents.</td></tr>
+                            <tr><td>2.2 Hiérarchie des Titres</td><td>✅ La structure des titres (H1, H2) est bien respectée.</td><td>RAS. Maintenir cette bonne pratique.</td></tr>
+                            <tr><td>2.3 Maillage Interne</td><td>✅ Les pages sont bien liées entre elles.</td><td>RAS.</td></tr>
+                            <tr><td>2.4 Données Structurées</td><td>🟠 Détection partielle. Des opportunités (ex: Schema 'Event') sont manquées.</td><td>Enrichir les données structurées pour améliorer l'affichage dans les résultats de recherche.</td></tr>
+                            <tr><td>2.5 Backlinks</td><td>🔴 Le profil de liens externes semble peu développé, limitant l'autorité du site.</td><td><strong>Action stratégique :</strong> Lancer une campagne de netlinking en contactant des blogs et sites partenaires.</td></tr>
+                            <tr><td>2.6 Analyse Concurrence</td><td>🟠 Le site semble en retrait par rapport aux concurrents sur les mots-clés principaux.</td><td>Effectuer une analyse concurrentielle approfondie pour identifier les opportunités.</td></tr>
+                        </tbody>
+                    </table>
+                   
+                    <h3>3. E-Réputation & Notoriété Locale (Publique)</h3>
+                    <p>La marque jouit d'une notoriété naissante mais positive. Il y a une opportunité de renforcer la preuve sociale.</p>
+                    <table class="audit-table">
+                        <thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead>
+                        <tbody>
+                            <tr><td>3.1 Fiche Google Business</td><td>✅ La fiche existe et semble complète.</td><td>Encourager les clients à laisser des avis directement sur la fiche.</td></tr>
+                            <tr><td>3.2 Note Moyenne</td><td>🟠 La note est bonne mais basée sur peu d'avis.</td><td>Mettre en place une stratégie de collecte d'avis.</td></tr>
+                            <tr><td>3.3 Fraîcheur des Avis</td><td>🟠 Les derniers avis datent de plusieurs mois.</td><td>Solliciter de nouveaux avis pour montrer une activité récente.</td></tr>
+                            <tr><td>3.4 Réponse aux Avis</td><td>🔴 Aucune réponse visible aux avis clients.</td><td>Répondre à tous les avis (positifs comme négatifs) pour montrer l'engagement.</td></tr>
+                            <tr><td>3.5 Utilisation des Posts</td><td>🔴 Pas de Google Posts récents.</td><td>Utiliser les Posts pour promouvoir des offres, des nouveautés ou des événements.</td></tr>
+                            <tr><td>3.6 Plateformes d'Avis</td><td>🔴 La présence sur les plateformes d'avis tierces (ex: Trustpilot) est faible ou inexistante.</td><td>Créer des profils et encourager les avis sur au moins une plateforme reconnue.</td></tr>
+                            <tr><td>3.7 Annuaires Locaux</td><td>🟠 Présence limitée.</td><td>Inscrire l'entreprise dans les principaux annuaires locaux pertinents.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>4. Réseaux Sociaux (Analyse Publique)</h3>
+                    <p>La présence sur les réseaux sociaux est cohérente mais l'animation pourrait être plus engageante pour construire une communauté active.</p>
+                    <table class="audit-table">
+                        <thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead>
+                        <tbody>
+                            <tr><td>4.1 Liens vers les Réseaux</td><td>✅ Les liens sont présents et fonctionnels.</td><td>RAS.</td></tr>
+                            <tr><td>4.2 Complétude des Profils</td><td>✅ Les profils sont bien remplis.</td><td>RAS.</td></tr>
+                            <tr><td>4.3 Cohérence de l'Image</td><td>✅ L'identité visuelle est cohérente entre le site et les réseaux.</td><td>Excellent point pour la reconnaissance de la marque.</td></tr>
+                            <tr><td>4.4 Fréquence de Publication</td><td>🟠 Irrégulière.</td><td>Définir un calendrier de publication et s'y tenir.</td></tr>
+                            <tr><td>4.5 Qualité du Contenu</td><td>✅ Le contenu publié est de bonne qualité.</td><td>Continuer sur cette lancée.</td></tr>
+                            <tr><td>4.6 Engagement Visible</td><td>🟠 L'engagement est correct mais pourrait être plus élevé.</td><td>Poser plus de questions, créer des sondages et interagir avec les commentaires.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>5. Tunnel de Conversion (Analyse du Parcours)</h3>
+                    <p>Le parcours menant à la conversion est identifiable mais pourrait être optimisé pour réduire les frictions et augmenter le taux de transformation.</p>
+                    <table class="audit-table">
+                        <thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead>
+                        <tbody>
+                            <tr><td>5.1 Identification du Tunnel</td><td>✅ Le parcours principal est clair.</td><td>RAS. L'objectif principal est bien défini.</td></tr>
+                            <tr><td>5.2 Clarté des Étapes</td><td>✅ Le nombre d'étapes est limité.</td><td>Le parcours est direct et efficace.</td></tr>
+                            <tr><td>5.3 Facilité d'Utilisation</td><td>🟠 Les formulaires demandent des informations non essentielles.</td><td>Simplifier les formulaires au strict nécessaire pour réduire l'abandon.</td></tr>
+                            <tr><td>5.4 Textes Incitatifs</td><td>🟠 Les textes des boutons sont génériques (ex: "Valider").</td><td>Utiliser des textes plus engageants (ex: "Obtenir mon audit gratuit").</td></tr>
+                            <tr><td>5.5 Éléments de Réassurance</td><td>🟠 Peu d'éléments de réassurance (avis clients, logos de paiement) sont visibles.</td><td>Ajouter des badges de confiance et des témoignages pour rassurer l'utilisateur.</td></tr>
+                            <tr><td>5.6 Distractions Limitées</td><td>✅ Le tunnel de paiement est épuré.</td><td>Bonne pratique pour maintenir la concentration.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>6. Détection des Outils de Suivi</h3>
+                    <p>Les bases du suivi de données sont en place, permettant une analyse du trafic et du comportement des utilisateurs.</p>
+                    <table class="audit-table">
+                        <thead><tr><th>Critère</th><th>Résultat</th><th>Recommandation</th></tr></thead>
+                        <tbody>
+                            <tr><td>6.1 Détection de Google Analytics</td><td>✅ Le script de suivi Google Analytics est bien présent.</td><td>S'assurer que les objectifs de conversion (ex: envoi de formulaire) sont bien configurés.</td></tr>
+                            <tr><td>6.2 Gestionnaire de Balises</td><td>🟠 Google Tag Manager n'est pas détecté.</td><td>Envisager d'utiliser GTM pour une gestion plus simple et agile des scripts de suivi.</td></tr>
+                            <tr><td>6.3 Détection de Pixels Publicitaires</td><td>✅ Un pixel Meta (Facebook/Instagram) est détecté.</td><td>Exploiter ce pixel pour des campagnes de reciblage publicitaire ciblées.</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Prochaines Étapes</h3>
+                    <p>Ce rapport est le point de départ de votre croissance digitale. Pour aller plus loin, Greencub vous propose un <strong>atelier stratégique</strong> pour définir une feuille de route claire et prioriser les actions. Nous pouvons ensuite vous accompagner sur l'optimisation technique de votre site, la mise en place de votre stratégie de contenu et la gestion de vos campagnes pour transformer ces recommandations en résultats concrets.</p>
+                 `;
+
+                    stepLoading.classList.add("hidden");
+                    formModal.classList.remove("hidden");
+                } catch (error) {
+                    console.error(
+                        "Erreur lors de la génération de l'audit:",
+                        error
+                    );
+                    stepLoading.classList.add("hidden");
+                    stepUrl.classList.remove("hidden");
+                    urlError.textContent =
+                        "Une erreur est survenue. Veuillez réessayer.";
+                    generatedAuditReport =
+                        "<p>Désolé, une erreur est survenue lors de la génération de l'audit. Veuillez réessayer.</p>";
+                }
+            }
+
+            leadForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const name = document.getElementById("name").value;
+                const email = document.getElementById("email").value;
+                const phone = document.getElementById("phone").value;
+                console.log("Lead capturé:", { name, email, phone });
+
+                formModal.classList.add("hidden");
+                initialView.classList.add("hidden");
+
+                // Populate report details
+                reportUrl.textContent = urlInput.value;
+                reportDate.textContent = new Date().toLocaleDateString(
+                    "fr-FR",
+                    {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                    }
+                );
+                reportContent.innerHTML = generatedAuditReport;
+
+                stepReport.classList.remove("hidden");
+            });
+
+            downloadPdfBtn.addEventListener("click", () => {
+                const reportToPrint =
+                    document.getElementById("report-container");
+                const url = urlInput.value
+                    .trim()
+                    .replace(/^(https?:\/\/)?(www\.)?/, "")
+                    .split("/")[0];
+                const fileName = `audit-performance-${url}.pdf`;
+
+                html2canvas(reportToPrint, {
+                    backgroundColor: "#ffffff",
+                    scale: 2,
+                }).then((canvas) => {
+                    const imgData = canvas.toDataURL("image/png");
+                    const pdf = new jsPDF({
+                        orientation: "p",
+                        unit: "mm",
+                        format: "a4",
+                    });
+
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfHeight =
+                        (imgProps.height * pdfWidth) / imgProps.width;
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    let heightLeft = pdfHeight;
+                    let position = 0;
+
+                    pdf.addImage(
+                        imgData,
+                        "PNG",
+                        0,
+                        position,
+                        pdfWidth,
+                        pdfHeight
+                    );
+                    heightLeft -= pageHeight;
+
+                    while (heightLeft > 0) {
+                        position = heightLeft - pdfHeight;
+                        pdf.addPage();
+                        pdf.addImage(
+                            imgData,
+                            "PNG",
+                            0,
+                            position,
+                            pdfWidth,
+                            pdfHeight
+                        );
+                        heightLeft -= pageHeight;
+                    }
+
+                    pdf.save(fileName);
+                });
+            });
+
+            newAuditBtn.addEventListener("click", () => {
+                window.location.reload();
+            });
+        </script>
+    </body>
+</html>
